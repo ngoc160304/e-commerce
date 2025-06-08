@@ -1,0 +1,6 @@
+{
+  "watch": ["src"],
+  "ext": "ts,json",
+  "ignore": ["src/**/*.spec.ts"],
+  "exec": "cross-env BUILD_MODE=dev ts-node -r tsconfig-paths/register ./src/server.ts"
+}
