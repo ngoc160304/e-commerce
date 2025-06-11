@@ -15,6 +15,10 @@ const createCollectionOtp = async () => {
       .getDB()
       .collection(otpModel.OTP_COLECTION_NAME)
       .createIndex({ createdAt: 1 }, { expireAfterSeconds: 180 });
+    await mongodb
+      .getDB()
+      .collection(otpModel.OTP_COLECTION_NAME)
+      .createIndex({ userId: 1 }, { unique: true });
   }
 };
 export { createCollectionOtp };

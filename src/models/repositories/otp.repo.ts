@@ -1,8 +1,8 @@
 import { createObjectId } from '~/utils/format';
-import { productModel } from '../product.model';
+import { otpModel } from '../otp.model';
 import mongodb from '~/configs/database';
 import { ObjectId } from 'mongodb';
-const { PRODUCT_COLECTION_NAME } = productModel;
+const { OTP_COLECTION_NAME } = otpModel;
 
 interface OTP {
   userId: ObjectId;
@@ -12,16 +12,24 @@ interface OTP {
 const findOneById = async (id: string) => {
   return await mongodb
     .getDB()
-    .collection<OTP>(PRODUCT_COLECTION_NAME)
+    .collection<OTP>(OTP_COLECTION_NAME)
     .findOne({
-      _id: createObjectId(id),
-      _destroy: false
+      _id: createObjectId(id)
+    });
+};
+const findOneByUserId = async (userId: string) => {
+  return await mongodb
+    .getDB()
+    .collection<OTP>(OTP_COLECTION_NAME)
+    .findOne({
+      userId: createObjectId(userId)
     });
 };
 const createNew = async (data: OTP) => {
-  return await mongodb.getDB().collection<OTP>(PRODUCT_COLECTION_NAME).insertOne(data);
+  return await mongodb.getDB().collection<OTP>(OTP_COLECTION_NAME).insertOne(data);
 };
-export const productRepo = {
+export const otpRepo = {
   createNew,
-  findOneById
+  findOneById,
+  findOneByUserId
 };

@@ -1,7 +1,7 @@
 declare interface User {
   email: string;
   userId: string;
-  role: string[];
+  role: string;
 }
 
 declare namespace Express {

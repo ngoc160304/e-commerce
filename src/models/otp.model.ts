@@ -8,8 +8,7 @@ const OTP_COLLECTION_SCHEMA = {
         bsonType: 'objectId'
       },
       otp: {
-        bsonType: 'string',
-        maxLength: 6
+        bsonType: 'string'
       },
       createdAt: {
         bsonType: 'date'

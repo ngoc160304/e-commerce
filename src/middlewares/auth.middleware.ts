@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { REFRESH_TOKEN, UNAUTHORIZED } from '~/core/errors.response';
+import { FORBIDDEN, REFRESH_TOKEN, UNAUTHORIZED } from '~/core/errors.response';
 import { keyStoreRepo } from '~/models/repositories/keyStore.repo';
 import { JwtProvider } from '~/providers/jwt.provider';
 import { HEADERS } from '~/utils/constant';
@@ -31,7 +31,16 @@ const authentication = async (req: Request, res: Response, next: NextFunction) =
     next(error);
   }
 };
+const authorization = (role: string[]) => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    if (role.includes(req.user.role)) {
+      return next();
+    }
+    return next(new FORBIDDEN("Your doesn't allow this api !"));
+  };
+};
 
 export const authMiddleware = {
-  authentication
+  authentication,
+  authorization
 };

@@ -1,4 +1,5 @@
 import { STATUS } from '~/utils/constant';
+import { EMAIL_RULE } from '~/utils/validations';
 
 const SHOP_COLECTION_NAME = 'shops';
 const SHOP_COLLECTION_SCHEMA = {
@@ -7,6 +8,7 @@ const SHOP_COLLECTION_SCHEMA = {
     required: [
       'userId',
       'name',
+      'password',
       'slug',
       'description',
       'logo_url',
@@ -25,6 +27,9 @@ const SHOP_COLLECTION_SCHEMA = {
       name: {
         bsonType: 'string'
       },
+      password: {
+        bsonType: 'string'
+      },
       slug: {
         bsonType: 'string'
       },
@@ -32,14 +37,23 @@ const SHOP_COLLECTION_SCHEMA = {
         bsonType: 'string'
       },
       logo_url: {
-        bsonType: 'string'
+        bsonType: ['string', 'null']
       },
       is_verified: {
         bsonType: 'bool'
       },
       info_contact: {
         bsonType: 'object',
-        required: ['email', 'phone_number']
+        required: ['email'],
+        properties: {
+          email: {
+            bsonType: 'string',
+            pattern: EMAIL_RULE
+          },
+          phone_number: {
+            bsonType: 'string'
+          }
+        }
       },
       status: {
         bsonType: 'string',

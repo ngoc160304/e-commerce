@@ -21,6 +21,7 @@ const START_SERVER = () => {
   app.use(morgan('dev'));
   app.use(cors(corsOptions));
   app.use(express.json());
+  app.use(express.urlencoded({ extended: true }));
   app.get('/', (req, res) => {
     res.json({
       ok: 'ok'

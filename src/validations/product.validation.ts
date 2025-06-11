@@ -1,7 +1,6 @@
 import { z } from 'zod/v4';
 import { Request, Response, NextFunction } from 'express';
 import { BAD_REQUEST } from '~/core/errors.response';
-import { STATUS } from '~/utils/constant';
 class ProductValidation {
   static createNew = async (req: Request, res: Response, next: NextFunction) => {
     const data = z.object({
@@ -15,8 +14,7 @@ class ProductValidation {
           })
         )
         .min(3),
-      sold: z.int(),
-      status: z.enum([...Object.values(STATUS)]).default(STATUS.ACTIVE)
+      sold: z.int()
     });
     try {
       const newBody = await data.parseAsync(req.body);
