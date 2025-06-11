@@ -25,4 +25,23 @@ class CONFLICT extends ErrorResponse {
     super(message, statusCode);
   }
 }
-export { ErrorResponse, BAD_REQUEST, FORBIDDEN, CONFLICT };
+class NOT_FOUND extends ErrorResponse {
+  constructor(message = StatusCodes[StatusCodes.NOT_FOUND], statusCode = StatusCodes.NOT_FOUND) {
+    super(message, statusCode);
+  }
+}
+class UNAUTHORIZED extends ErrorResponse {
+  constructor(
+    message = StatusCodes[StatusCodes.UNAUTHORIZED],
+    statusCode = StatusCodes.UNAUTHORIZED
+  ) {
+    super(message, statusCode);
+  }
+}
+
+class REFRESH_TOKEN extends ErrorResponse {
+  constructor(message = StatusCodes[StatusCodes.GONE], statusCode = StatusCodes.GONE) {
+    super(message, statusCode);
+  }
+}
+export { ErrorResponse, BAD_REQUEST, FORBIDDEN, CONFLICT, NOT_FOUND, UNAUTHORIZED, REFRESH_TOKEN };

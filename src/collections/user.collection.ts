@@ -3,10 +3,9 @@ import { userModel } from '~/models/user.model';
 const createCollectionUser = async () => {
   try {
     await mongodb.getDB().createCollection(userModel.USER_COLECTION_NAME);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (err) {
-    if (err instanceof Error) {
-      console.error(err?.cause || '');
-    }
+    //
   } finally {
     await mongodb.getDB().command({
       collMod: userModel.USER_COLECTION_NAME,

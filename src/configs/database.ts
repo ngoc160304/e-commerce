@@ -8,9 +8,13 @@ const mongoClient = new MongoClient(MONGO_URI, {
     version: ServerApiVersion.v1,
     strict: true,
     deprecationErrors: true
-  }
+  },
+  monitorCommands: true
 });
 
+// mongoClient.on('commandStarted', (event) => console.debug(event));
+// mongoClient.on('commandSucceeded', (event) => console.debug(event));
+// mongoClient.on('commandFailed', (event) => console.debug(event));
 class ConnectMongoClient {
   mongoInstance: Db | null;
   constructor() {

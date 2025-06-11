@@ -15,3 +15,8 @@ export const ROLE_NAME = {
   CLIENT: 'client',
   SELLER: 'seller'
 };
+export const HEADERS = {
+  ACCESS_TOKEN: 'x-atoken-id',
+  CLIENT_ID: 'x-client-id',
+  REFRESH_TOKEN: 'x-rtoken-id'
+};

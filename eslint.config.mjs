@@ -27,7 +27,7 @@ export default defineConfig([
           endOfLine: 'auto'
         }
       ],
-      'no-console': ['warn', { allow: ['warn', 'error'] }]
+      'no-console': ['warn', { allow: ['warn', 'error', 'debug'] }]
     },
     ignores: ['**/node_modules/', '**/dist/']
   }

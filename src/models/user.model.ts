@@ -5,7 +5,6 @@ const USER_COLECTION_NAME = 'users';
 const USER_COLLECTION_SCHEMA = {
   $jsonSchema: {
     bsonType: 'object',
-    title: 'Student Object Validation',
     required: [
       'username',
       'email',
@@ -16,9 +15,10 @@ const USER_COLLECTION_SCHEMA = {
       'status',
       'verifyToken',
       'dateOfBirth',
-      'roles',
+      'role',
       'createdAt',
-      'updatedAt'
+      'updatedAt',
+      '_destroy'
     ],
     properties: {
       username: {
@@ -54,18 +54,18 @@ const USER_COLLECTION_SCHEMA = {
       dateOfBirth: {
         bsonType: ['date', 'null']
       },
-      roles: {
-        bsonType: 'array',
-        items: {
-          bsonType: 'string',
-          enum: [...Object.values(ROLE_NAME)]
-        }
+      role: {
+        bsonType: 'string',
+        enum: [...Object.values(ROLE_NAME)]
       },
       createdAt: {
         bsonType: 'date'
       },
       updatedAt: {
         bsonType: ['date', 'null']
+      },
+      _destroy: {
+        bsonType: 'bool'
       }
     }
   }
