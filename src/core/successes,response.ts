@@ -4,7 +4,7 @@ import { StatusCodes } from 'http-status-codes';
 class SuccessResponse {
   message: string;
   status: number;
-  metadata: object;
+  metadata: object | (object | string)[];
   constructor({
     message = '',
     status = StatusCodes.OK,

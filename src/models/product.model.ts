@@ -1,5 +1,4 @@
 import { STATUS } from '~/utils/constant';
-import { EMAIL_RULE } from '~/utils/validations';
 
 const PRODUCT_COLECTION_NAME = 'products';
 const PRODUCT_COLLECTION_SCHEMA = {
@@ -9,26 +8,35 @@ const PRODUCT_COLLECTION_SCHEMA = {
       'shopId',
       'title',
       'slug',
-      'descriptions',
-      'thumnmails',
+      'description',
+      'thumbnails',
+      'video',
       'sold',
       'status',
+      'ratingAverage',
+      'ratingCound',
+      'likeCount',
       'createdAt',
       'updatedAt',
       '_destroy'
     ],
     properties: {
+      shopId: {
+        bsonType: 'objectId'
+      },
       title: {
         bsonType: 'string'
       },
-      descriptions: {
-        bsonType: 'string',
-        pattern: EMAIL_RULE
+      description: {
+        bsonType: 'string'
       },
       slug: {
         bsonType: 'string'
       },
-      thumnmails: {
+      videos: {
+        bsonType: 'string'
+      },
+      thumbnails: {
         bsonType: 'array',
         minItems: 3,
         uniqueItems: true,
@@ -51,6 +59,15 @@ const PRODUCT_COLLECTION_SCHEMA = {
         enum: [...Object.values(STATUS)]
       },
       sold: {
+        bsonType: 'int'
+      },
+      ratingAverage: {
+        bsonType: 'double'
+      },
+      ratingCound: {
+        bsonType: 'int'
+      },
+      likeCount: {
         bsonType: 'int'
       },
       createdAt: {

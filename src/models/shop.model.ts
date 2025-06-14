@@ -11,12 +11,12 @@ const SHOP_COLLECTION_SCHEMA = {
       'password',
       'slug',
       'description',
-      'logo_url',
-      'is_verified',
+      'logoUrl',
+      'isVerified',
       'createdAt',
       'updatedAt',
-      'info_contact',
-      'total_followers',
+      'infoContact',
+      'totalFollowers',
       'status',
       '_destroy'
     ],
@@ -36,13 +36,13 @@ const SHOP_COLLECTION_SCHEMA = {
       description: {
         bsonType: 'string'
       },
-      logo_url: {
+      logoUrl: {
         bsonType: ['string', 'null']
       },
-      is_verified: {
+      isVerified: {
         bsonType: 'bool'
       },
-      info_contact: {
+      infoContact: {
         bsonType: 'object',
         required: ['email'],
         properties: {

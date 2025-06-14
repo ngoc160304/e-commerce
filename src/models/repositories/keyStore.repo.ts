@@ -21,7 +21,7 @@ const findOneByUserId = async (userId: string) => {
 const createNew = async (data: KeyStore) => {
   return await mongodb.getDB().collection<KeyStore>(KEY_STORE_COLECTION_NAME).insertOne(data);
 };
-const update = async (userId: string, data: Partial<KeyStore>) => {
+const update = async (userId: string, data: Partial<KeyStore>, refreshTokenUse: string) => {
   return await mongodb
     .getDB()
     .collection<KeyStore>(KEY_STORE_COLECTION_NAME)
@@ -29,7 +29,7 @@ const update = async (userId: string, data: Partial<KeyStore>) => {
       {
         userId: createObjectId(userId)
       },
-      { $push: { refreshTokenUses: data.refreshToken }, $set: data },
+      { $push: { refreshTokenUses: refreshTokenUse }, $set: data },
       { upsert: true }
     );
 };

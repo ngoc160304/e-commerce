@@ -8,6 +8,6 @@ router.post('/register', accessValidation.register, accessController.register);
 router.post('/login', accessValidation.login, accessController.login);
 router.post('/veridy-account', accessValidation.verifyAccount, accessController.verifyAccount);
 router.post('/refresh-token', accessController.refreshToken);
-router.post('/logout', authMiddleware.authentication, accessController.logout);
+router.delete('/logout', authMiddleware.authentication, accessController.logout);
 
 export const accessRouter = router;

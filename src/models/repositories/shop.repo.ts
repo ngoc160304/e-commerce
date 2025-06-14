@@ -36,7 +36,7 @@ const findOneByUserId = async (userId: string) => {
     .getDB()
     .collection<SHOP>(SHOP_COLECTION_NAME)
     .findOne({
-      _id: createObjectId(userId),
+      userId: createObjectId(userId),
       _destroy: false
     });
 };
@@ -57,7 +57,7 @@ const updateByUser = async (data: Partial<SHOP>, userId: string) => {
     .findOneAndUpdate(
       { userId: createObjectId(userId) },
       { $set: data },
-      { returnDocument: 'after' }
+      { returnDocument: 'after', projection: { password: 1 } }
     );
 };
 

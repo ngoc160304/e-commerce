@@ -20,3 +20,13 @@ export const HEADERS = {
   CLIENT_ID: 'x-client-id',
   REFRESH_TOKEN: 'x-rtoken-id'
 };
+export const DISCOUNT_TYPES = {
+  FIXED_AMMOUNT: 'fixed_amount',
+  PERCENTAGE: 'percentage'
+};
+export const DISCOUNT_APPLY = {
+  ALL: 'all',
+  SPECIFIC: 'specific'
+};
+export const LIMIT_ITEMS = 24;
+export const PAGE_DEFAULT = 1;

@@ -111,6 +111,7 @@ class AccessService {
     }
     return 'Verify account success !';
   };
+  // Cập nhật lại nếu refreshtoken lỗi thì throw lỗi để bên clien tự động đăng xuất
   static refreshToken = async ({
     refreshToken,
     clientId
@@ -150,10 +151,14 @@ class AccessService {
       { email: user.email, userId: user._id, role: user.role },
       privateKey
     );
-    const updateKeyUser = await keyStoreRepo.update(user._id.toString(), {
-      refreshToken: pairJwtToken.refreshToken,
-      publicKey
-    });
+    const updateKeyUser = await keyStoreRepo.update(
+      user._id.toString(),
+      {
+        refreshToken: pairJwtToken.refreshToken,
+        publicKey
+      },
+      refreshToken
+    );
     if (!updateKeyUser) {
       throw new BAD_REQUEST();
     }

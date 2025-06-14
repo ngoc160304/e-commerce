@@ -5,7 +5,6 @@ import { ROLE_NAME } from '~/utils/constant';
 import shopValidation from '~/validations/shop.validation';
 const router = Router();
 
-// khi xác nhận tạo shop chỉ cần kiểm tra có tồn tại trong db hay không r lấy dữ liệu mới cập nhật lại trong db
 router.post(
   '/create',
   authMiddleware.authentication,
