@@ -9,6 +9,7 @@ const SHOP_COLLECTION_SCHEMA = {
       'userId',
       'name',
       'password',
+      'email',
       'slug',
       'description',
       'logoUrl',
@@ -30,6 +31,7 @@ const SHOP_COLLECTION_SCHEMA = {
       password: {
         bsonType: 'string'
       },
+      email: { bsonType: 'string', pattern: EMAIL_RULE },
       slug: {
         bsonType: 'string'
       },
@@ -44,7 +46,7 @@ const SHOP_COLLECTION_SCHEMA = {
       },
       infoContact: {
         bsonType: 'object',
-        required: ['email'],
+        required: ['email', 'phone_number'],
         properties: {
           email: {
             bsonType: 'string',
@@ -54,6 +56,9 @@ const SHOP_COLLECTION_SCHEMA = {
             bsonType: 'string'
           }
         }
+      },
+      totalFollowers: {
+        bsonType: 'int'
       },
       status: {
         bsonType: 'string',

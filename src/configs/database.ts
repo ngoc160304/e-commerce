@@ -36,7 +36,9 @@ class ConnectMongoClient {
     await mongoClient.close();
     this.mongoInstance = null;
   };
+  mogoClient = () => {
+    return mongoClient;
+  };
 }
 const mongodb = new ConnectMongoClient();
-
 export default mongodb;

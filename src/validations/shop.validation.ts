@@ -13,12 +13,12 @@ class shopValidation {
     const data = z.object({
       name: z.string(),
       description: z.string().default(''),
-      info_contact: z.object({
+      infoContact: z.object({
         email: z.email({ error: EMAIL_RULE_MESSAGE, pattern: new RegExp(EMAIL_RULE) }),
         phone_number: z.string().optional()
       }),
       password: z.string({ error: PASSWORD_RULE_MESSAGE }).regex(PASSWORD_RULE),
-      status: z.enum([...Object.values(STATUS)]).default(STATUS.ACTIVE)
+      status: z.enum([...Object.values(STATUS)]).default(STATUS.PENDING)
     });
     try {
       const newBody = await data.parseAsync(req.body);

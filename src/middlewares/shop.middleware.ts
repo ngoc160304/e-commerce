@@ -8,7 +8,7 @@ const shopAuthentication = async (req: Request, res: Response, next: NextFunctio
     if (!getShopUser) {
       throw new FORBIDDEN();
     }
-    if (getShopUser.status !== STATUS.ACTIVE || getShopUser.is_verified === false) {
+    if (getShopUser.status !== STATUS.ACTIVE || getShopUser.isVerified === false) {
       throw new FORBIDDEN();
     }
     req.shop = {

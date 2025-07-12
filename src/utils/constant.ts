@@ -12,8 +12,8 @@ export const STATUS = {
 };
 export const ROLE_NAME = {
   ADMIN: 'admin',
-  CLIENT: 'client',
-  SELLER: 'seller'
+  CLIENT: 'user',
+  SELLER: 'shop'
 };
 export const HEADERS = {
   ACCESS_TOKEN: 'x-atoken-id',
@@ -27,6 +27,11 @@ export const DISCOUNT_TYPES = {
 export const DISCOUNT_APPLY = {
   ALL: 'all',
   SPECIFIC: 'specific'
+};
+export const STATUS_ORDER = {
+  CANCEL: 'cancel',
+  PENDING: 'pending',
+  ACTIVE: 'active'
 };
 export const LIMIT_ITEMS = 24;
 export const PAGE_DEFAULT = 1;

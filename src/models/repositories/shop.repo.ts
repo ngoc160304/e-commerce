@@ -8,17 +8,18 @@ interface SHOP {
   userId: ObjectId;
   name: string;
   password: string;
+  email: string;
   slug: string;
   description: string;
-  logo_url: string | null;
-  is_verified: boolean;
+  logoUrl: string | null;
+  isVerified: boolean;
   createdAt: Date;
   updatedAt: Date | null;
-  info_contact: {
+  infoContact: {
     email: string;
     phone_number?: string;
   };
-  total_followers: number;
+  totalFollowers: number;
   status: string;
   _destroy: boolean;
 }

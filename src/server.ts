@@ -11,6 +11,7 @@ import corsOptions from './configs/cors';
 import { errorHandling } from './middlewares/errorsHandle.middleware';
 import { initCollections } from './collections';
 import { indexRoute } from './routers';
+import { connectRedis } from './configs/redis';
 const API_V1 = '/api/v1';
 const app = express();
 
@@ -43,6 +44,7 @@ const START_SERVER = () => {
     console.log('Connect database e-commerce success !');
     await initCollections();
     console.log('Init collections success !');
+    await connectRedis();
     START_SERVER();
   } catch (error) {
     console.log(error);

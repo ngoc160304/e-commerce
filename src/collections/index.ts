@@ -1,9 +1,16 @@
+import { createCollectionCart } from './cart.collection';
+import { createCollectionCategoryProduct } from './category.collection';
 import { createCollectionDiscount } from './discount.collection';
+import { createCollectionInventory } from './inventory.collection';
 import { createCollectionKeyStore } from './keyStore.collection';
+import { createCollectionOrder } from './order.collection';
 import { createCollectionOtp } from './otp.collection';
 import { createCollectionProduct } from './product.collection';
+import { createCollectionResource } from './resource.collection';
+import { createCollectionRole } from './role.collection';
 import { createCollectionShop } from './shop.collection';
 import { createCollectionUser } from './user.collection';
+import { createCollectionUserDiscount } from './userDiscount.collection';
 
 const initCollections = async () => {
   await createCollectionUser();
@@ -12,5 +19,12 @@ const initCollections = async () => {
   await createCollectionOtp();
   await createCollectionShop();
   await createCollectionDiscount();
+  await createCollectionInventory();
+  await createCollectionRole();
+  await createCollectionResource();
+  await createCollectionCart();
+  await createCollectionOrder();
+  await createCollectionCategoryProduct();
+  await createCollectionUserDiscount();
 };
 export { initCollections };

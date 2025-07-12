@@ -55,7 +55,7 @@ const USER_COLLECTION_SCHEMA = {
         bsonType: ['date', 'null']
       },
       role: {
-        bsonType: 'string',
+        bsonType: ['string'],
         enum: [...Object.values(ROLE_NAME)]
       },
       createdAt: {

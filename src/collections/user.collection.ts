@@ -11,6 +11,12 @@ const createCollectionUser = async () => {
       collMod: userModel.USER_COLECTION_NAME,
       validator: userModel.USER_COLLECTION_SCHEMA
     });
+    await mongodb.getDB().collection(userModel.USER_COLECTION_NAME).createIndex(
+      {
+        email: 1
+      },
+      { unique: true }
+    );
   }
 };
 export { createCollectionUser };

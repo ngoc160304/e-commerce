@@ -29,11 +29,15 @@ const findOneById = async (id: string) => {
     });
 };
 
-const findOneByEmail = async (email: string) => {
-  return await mongodb.getDB().collection<User>(USER_COLECTION_NAME).findOne({
-    email: email,
-    _destroy: false
-  });
+const findOneByEmail = async (email: string, filter?: object) => {
+  return await mongodb
+    .getDB()
+    .collection<User>(USER_COLECTION_NAME)
+    .findOne({
+      email: email,
+      _destroy: false,
+      ...filter
+    });
 };
 const findOneByVerifyToken = async (verifyToken: string) => {
   return await mongodb.getDB().collection<User>(USER_COLECTION_NAME).findOne({
@@ -44,16 +48,19 @@ const findOneByVerifyToken = async (verifyToken: string) => {
 const createNew = async (data: User) => {
   return await mongodb.getDB().collection<User>(USER_COLECTION_NAME).insertOne(data);
 };
-const update = async (data: Partial<User>) => {
-  return await mongodb.getDB().collection<User>(USER_COLECTION_NAME).updateOne(
-    {
-      verifyToken: data.verifyToken,
-      _destroy: false
-    },
-    {
-      $set: data
-    }
-  );
+const update = async (data: Partial<User>, userId: string) => {
+  return await mongodb
+    .getDB()
+    .collection<User>(USER_COLECTION_NAME)
+    .updateOne(
+      {
+        _id: createObjectId(userId),
+        _destroy: false
+      },
+      {
+        $set: data
+      }
+    );
 };
 
 export const userRepo = {

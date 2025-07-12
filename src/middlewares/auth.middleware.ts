@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { FORBIDDEN, REFRESH_TOKEN, UNAUTHORIZED } from '~/core/errors.response';
 import { keyStoreRepo } from '~/models/repositories/keyStore.repo';
 import { JwtProvider } from '~/providers/jwt.provider';
+import { redisService } from '~/services/redis.service';
 import { HEADERS } from '~/utils/constant';
 
 /**
@@ -10,17 +11,24 @@ import { HEADERS } from '~/utils/constant';
  */
 const authentication = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const clientId = req.headers[HEADERS.CLIENT_ID];
-    const accessToken = req.headers[HEADERS.ACCESS_TOKEN] || '';
-    if (!clientId) {
+    const clientId = req.headers[HEADERS.CLIENT_ID]?.toString();
+    const accessToken = req.headers[HEADERS.ACCESS_TOKEN]?.toString();
+    if (!clientId || !accessToken) {
       throw new UNAUTHORIZED();
     }
-    const getKeyUser = await keyStoreRepo.findOneByUserId(clientId.toString());
-    if (!getKeyUser) {
-      throw new UNAUTHORIZED();
+    const getKeyRedis = await redisService.get(`rfToken:${clientId}`);
+    if (getKeyRedis) {
+      const parseKey = JSON.parse(getKeyRedis);
+      const decodedToken = JwtProvider.verifyToken(accessToken, parseKey.publicKey) as User;
+      req.user = decodedToken;
+    } else {
+      const getKeyUser = await keyStoreRepo.findOneByUserId(clientId);
+      if (!getKeyUser) {
+        throw new UNAUTHORIZED();
+      }
+      const decodedToken = JwtProvider.verifyToken(accessToken, getKeyUser.publicKey) as User;
+      req.user = decodedToken;
     }
-    const decoedToken = JwtProvider.verifyToken(accessToken.toString(), getKeyUser.publicKey);
-    req.user = decoedToken as User;
     return next();
   } catch (error) {
     if (error instanceof Error) {
@@ -33,7 +41,7 @@ const authentication = async (req: Request, res: Response, next: NextFunction) =
 };
 const authorization = (role: string[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
-    if (role.includes(req.user.role)) {
+    if (role.includes(req.user.role.toString())) {
       return next();
     }
     return next(new FORBIDDEN("Your doesn't allow this api !"));

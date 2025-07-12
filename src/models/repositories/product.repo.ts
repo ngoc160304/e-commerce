@@ -1,97 +1,81 @@
 import { createObjectId } from '~/utils/format';
-import { productModel } from '../product.model';
-import mongodb from '~/configs/database';
-import { Double, ObjectId } from 'mongodb';
-const { PRODUCT_COLECTION_NAME } = productModel;
+import { Product, productModel } from '../product.model';
+import { ClientSession } from 'mongodb';
+import { inventoryModel } from '../inventory.model';
 
-export interface Product {
-  shopId: ObjectId;
-  slug: string;
-  title: string;
-  description: string;
-  thumbnails: { position: string; url: string }[];
-  video: string;
-  sold: number;
-  status: string;
-  ratingAverage: Double;
-  ratingCound: number;
-  likeCount: number;
-  createdAt: Date;
-  updatedAt: Date | null;
-  _destroy: boolean;
-}
-const getListProduct = async (query: object, limit: number, page: number, project: object) => {
-  return await mongodb
-    .getDB()
-    .collection<Product>(PRODUCT_COLECTION_NAME)
-    .find({ _destroy: false, ...query })
-    .limit(limit)
-    .skip((page - 1) * limit)
-    .project({ _destroy: 0, ...project })
+const findOneById = async (id: string, filter = {}) => {
+  return await productModel.getCollectionProduct().findOne({
+    _id: createObjectId(id),
+    _destroy: false,
+    ...filter
+  });
+};
+const createNew = async (data: Product, session?: ClientSession) => {
+  return await productModel.getCollectionProduct().insertOne(data, { session });
+};
+
+const updateByShop = async (data: Partial<Product>, producId: string, shopId: string) => {
+  return await productModel.getCollectionProduct().updateOne(
+    {
+      _id: createObjectId(producId),
+      shopId: createObjectId(shopId),
+      _destroy: false
+    },
+    {
+      $set: data
+    }
+  );
+};
+const getListProductUser = async (
+  find: object,
+  sort: object,
+  limitPage: number,
+  pageCurrent: number
+) => {
+  return await productModel
+    .getCollectionProduct()
+    .aggregate([
+      {
+        $match: find
+      },
+      {
+        $lookup: {
+          from: inventoryModel.INVENTORY_COLECTION_NAME,
+          localField: '_id',
+          foreignField: 'product_id',
+          as: 'iventory'
+        }
+      },
+      {
+        $project: {
+          _id: 1,
+          product_name: 1,
+          description: 1,
+          total_stock: { $sum: '$iventory.stock_quantity' }
+        }
+      },
+      {
+        $sort: sort
+      },
+      {
+        $skip: pageCurrent
+      },
+      {
+        $limit: limitPage
+      }
+    ])
     .toArray();
 };
-const findOneById = async (id: string) => {
-  return await mongodb
-    .getDB()
-    .collection<Product>(PRODUCT_COLECTION_NAME)
-    .findOne({
-      _id: createObjectId(id),
-      _destroy: false
-    });
+const deleteByShop = async (productId: string, shopId: string) => {
+  return await productModel.getCollectionProduct().deleteOne({
+    _id: createObjectId(productId),
+    shopId: createObjectId(shopId)
+  });
 };
-const getProductsByUser = async (
-  query: object,
-  limit: number,
-  page: number,
-  project: object = {}
-) => {
-  return await getListProduct(query, limit, page, project);
-};
-const getProductsBySeller = async (
-  query: object,
-  limit: number,
-  page: number,
-  project: object = {}
-) => {
-  return await getListProduct(query, limit, page, project);
-};
-const create = async (data: Product) => {
-  return await mongodb.getDB().collection<Product>(PRODUCT_COLECTION_NAME).insertOne(data);
-};
-const update = async (data: Partial<Product>, filter: object) => {
-  return await mongodb
-    .getDB()
-    .collection<Product>(PRODUCT_COLECTION_NAME)
-    .findOneAndUpdate(
-      {
-        ...filter,
-        _destroy: false
-      },
-      { $set: data },
-      {
-        returnDocument: 'after'
-      }
-    );
-};
-const deleteById = async (productId: string, filter?: object) => {
-  return await mongodb
-    .getDB()
-    .collection<Product>(PRODUCT_COLECTION_NAME)
-    .updateOne(
-      { _id: createObjectId(productId), ...filter },
-      {
-        $set: {
-          _destroy: true
-        }
-      }
-    );
-};
-
 export const productRepo = {
-  create,
   findOneById,
-  update,
-  getProductsByUser,
-  getProductsBySeller,
-  deleteById
+  createNew,
+  updateByShop,
+  getListProductUser,
+  deleteByShop
 };

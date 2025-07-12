@@ -1,3 +1,5 @@
+import { Double, ObjectId } from 'mongodb';
+import mongodb from '~/configs/database';
 import { DISCOUNT_APPLY, DISCOUNT_TYPES } from '~/utils/constant';
 
 const DISCOUNT_COLECTION_NAME = 'discounts';
@@ -7,32 +9,31 @@ const DISCOUNT_COLLECTION_SCHEMA = {
     required: [
       'shopId',
       'name',
-      'description',
       'type',
+      'slug',
       'value', // giá trị giảm giá của fixed and percentage
       'code',
       'startDate',
       'endDate',
       'maxUses', // số lượng discount được sử dụng
       'usesCount', // số discount đã sử dụng
-      'usersUsed', // ai đã sử dụng
       'maxUsePerUser', // số lượng tối đa mà ngươi dùng có thể sử dụng
       'minOrderValue', // giá trị đơn hàng tối thiểu
-      'isActive',
       'appliesTo', // dạng áp dụng cho sản phẩm
       'productIds', // id sản phẩm được áp dụng
+      'isPublish',
       'createdAt',
       'updatedAt',
       '_destroy'
     ],
     properties: {
       shopId: {
-        bsonType: 'objectId'
+        bsonType: ['objectId', 'null']
       },
       name: {
         bsonType: 'string'
       },
-      description: {
+      slug: {
         bsonType: 'string'
       },
       type: {
@@ -40,7 +41,7 @@ const DISCOUNT_COLLECTION_SCHEMA = {
         enum: [...Object.values(DISCOUNT_TYPES)]
       },
       value: {
-        bsonType: 'number'
+        bsonType: ['int']
       },
       code: {
         bsonType: 'string'
@@ -49,7 +50,7 @@ const DISCOUNT_COLLECTION_SCHEMA = {
         bsonType: 'date'
       },
       endDate: {
-        bsonType: 'string'
+        bsonType: 'date'
       },
       maxUses: {
         bsonType: 'int'
@@ -57,39 +58,25 @@ const DISCOUNT_COLLECTION_SCHEMA = {
       usesCount: {
         bsonType: 'int'
       },
-      usersUsed: {
-        bsonType: 'array',
-        items: {
-          bsonType: 'object',
-          required: ['userId', 'useCount'],
-          properties: {
-            userId: {
-              bsonType: 'objectId'
-            },
-            useCount: {
-              bsonType: 'int'
-            }
-          }
-        }
-      },
       maxUsePerUser: {
         bsonType: 'int'
       },
       minOrderValue: {
         bsonType: 'int'
       },
-      isActive: {
-        bsonType: 'bool'
-      },
+
       appliesTo: {
         bsonType: 'string',
-        enum: Object.values(DISCOUNT_APPLY)
+        enum: [...Object.values(DISCOUNT_APPLY)]
       },
       productIds: {
-        bsonType: 'array',
+        bsonType: ['array', 'null'],
         items: {
           bsonType: 'objectId'
         }
+      },
+      isPublish: {
+        bsonType: 'bool'
       },
       createdAt: {
         bsonType: 'date'
@@ -104,7 +91,31 @@ const DISCOUNT_COLLECTION_SCHEMA = {
   }
 };
 
+export interface Discount {
+  shopId: ObjectId;
+  name: string;
+  type: string;
+  value: number;
+  slug: string;
+  code: string;
+  startDate: Date;
+  endDate: Date;
+  maxUses: number;
+  usesCount: number;
+  maxUsePerUser: number;
+  minOrderValue: number;
+  appliesTo: string;
+  productIds: ObjectId[] | null;
+  isPublish: boolean;
+  createdAt: Date;
+  updatedAt: Date | null;
+  _destroy: boolean;
+}
+const getCollectionDiscount = () => {
+  return mongodb.getDB().collection<Discount>(DISCOUNT_COLECTION_NAME);
+};
 export const discountModel = {
   DISCOUNT_COLECTION_NAME,
   DISCOUNT_COLLECTION_SCHEMA
 };
+export { getCollectionDiscount };

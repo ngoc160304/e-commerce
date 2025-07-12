@@ -1,5 +1,4 @@
 import bcrypt from 'bcryptjs';
-import crypto from 'node:crypto';
 import { v4 as uuidv4 } from 'uuid';
 import { BAD_REQUEST, CONFLICT, FORBIDDEN, UNAUTHORIZED } from '~/core/errors.response';
 import { keyStoreRepo } from '~/models/repositories/keyStore.repo';
@@ -7,8 +6,10 @@ import { userRepo } from '~/models/repositories/user.repo';
 import { BrevoProvider } from '~/providers/brevo.provider';
 import { JwtProvider } from '~/providers/jwt.provider';
 import { ROLE_NAME, STATUS } from '~/utils/constant';
-import { pickUser } from '~/utils/format';
-
+import { createObjectId, pickUser } from '~/utils/format';
+import { generateKeyPairSync } from '~/utils/generate';
+import { redisService } from './redis.service';
+import { jwtDecode } from 'jwt-decode';
 class AccessService {
   static register = async (data: {
     email: string;
@@ -33,7 +34,7 @@ class AccessService {
       status: STATUS.PENDING,
       verifyToken: uuidv4(),
       avatar: null,
-      role: ROLE_NAME.ADMIN,
+      role: ROLE_NAME.CLIENT,
       dateOfBirth: null,
       createdAt: new Date(),
       updatedAt: null,
@@ -48,55 +49,44 @@ class AccessService {
   };
   static login = async (data: { email: string; password: string }) => {
     const { email, password } = data;
-    const user = await userRepo.findOneByEmail(email);
-    if (!user) {
-      throw new UNAUTHORIZED('Email or password is not correct !');
-    }
-    if (!bcrypt.compareSync(password, user.password)) {
-      throw new UNAUTHORIZED('Email or password is not correct !');
-    }
-    if (user.status === STATUS.PENDING) {
-      throw new BAD_REQUEST('Please check your mail to verify your email address !');
-    }
-    if (user.status !== STATUS.ACTIVE) {
-      throw new FORBIDDEN('Account does not have access !');
-    }
-    const keyUser = await keyStoreRepo.findOneByUserId(user._id.toString());
-    if (keyUser) {
-      throw new BAD_REQUEST();
-    }
-    const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', {
-      modulusLength: 4096,
-      publicKeyEncoding: {
-        type: 'pkcs1',
-        format: 'pem'
-      },
-      privateKeyEncoding: {
-        type: 'pkcs8',
-        format: 'pem'
-      }
-    });
-
-    const pairJwtToken = JwtProvider.generatePairToken(
-      {
-        email,
-        userId: user._id,
-        role: user.role
-      },
-      privateKey
-    );
-    const newKeyStore = await keyStoreRepo.createNew({
-      publicKey: publicKey,
-      refreshToken: pairJwtToken.refreshToken,
-      userId: user._id,
-      refreshTokenUses: []
-    });
-    if (!newKeyStore) {
-      throw new BAD_REQUEST("Cann'ot create new record !");
-    }
+    const getUser = await userRepo.findOneByEmail(email);
+    if (!getUser) throw new UNAUTHORIZED('Password or email is not correct !');
+    if (getUser.status === STATUS.PENDING)
+      throw new BAD_REQUEST('Please check your email to cofirm account !');
+    if (getUser.status !== STATUS.ACTIVE) throw new FORBIDDEN('Your account violates our policies');
+    if (!bcrypt.compareSync(password, getUser.password))
+      throw new UNAUTHORIZED('Password or email is not correct !');
+    const { privateKey, publicKey } = generateKeyPairSync();
+    const payload = {
+      userId: getUser._id.toString(),
+      email: getUser.email,
+      role: getUser.role
+    };
+    const pairToken = JwtProvider.generatePairToken(payload, privateKey);
+    if (!pairToken) throw new BAD_REQUEST("Cann't log in !");
+    const { accessToken, refreshToken } = pairToken;
+    // luu key user vao redis
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const [_, keyStore] = await Promise.all([
+      redisService.set(
+        `rfToken:${payload.userId}`,
+        JSON.stringify({
+          refreshToken,
+          publicKey
+        })
+      ),
+      keyStoreRepo.createNew({
+        publicKey,
+        refreshToken: accessToken,
+        userId: getUser._id,
+        refreshTokenUses: []
+      })
+    ]);
+    if (!keyStore) throw new BAD_REQUEST("Cann't log in !");
     return {
-      ...pairJwtToken,
-      ...pickUser(user, ['email', 'displayName', 'avatar', 'gender', 'role'])
+      accessToken,
+      refreshToken,
+      userInfo: pickUser(getUser, ['_id', 'username', 'email', 'displayName', 'avatar', 'role'])
     };
   };
   static verifyAccount = async (data: { verifyToken: string }) => {
@@ -105,10 +95,8 @@ class AccessService {
     if (!user) {
       throw new BAD_REQUEST();
     }
-    const verify = await userRepo.update({ verifyToken: null });
-    if (!verify) {
-      throw new BAD_REQUEST();
-    }
+    await userRepo.update({ verifyToken: null, status: STATUS.ACTIVE }, user._id.toString());
+
     return 'Verify account success !';
   };
   // Cập nhật lại nếu refreshtoken lỗi thì throw lỗi để bên clien tự động đăng xuất
@@ -119,53 +107,72 @@ class AccessService {
     refreshToken: string;
     clientId: string;
   }) => {
-    if (!clientId || !refreshToken) {
-      throw new UNAUTHORIZED();
-    }
-    const keyUser = await keyStoreRepo.findOneByUserId(clientId);
-    if (!keyUser) {
-      throw new UNAUTHORIZED();
-    }
-    if (keyUser.refreshToken !== refreshToken) {
-      throw new UNAUTHORIZED();
-    }
-    if (keyUser.refreshTokenUses.some((r) => r === refreshToken)) {
-      throw new UNAUTHORIZED();
-    }
-    const user = await userRepo.findOneById(clientId);
-    if (!user) {
-      throw new UNAUTHORIZED();
-    }
-    const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', {
-      modulusLength: 4096,
-      publicKeyEncoding: {
-        type: 'pkcs1',
-        format: 'pem'
-      },
-      privateKeyEncoding: {
-        type: 'pkcs8',
-        format: 'pem'
-      }
-    });
-    const pairJwtToken = JwtProvider.generatePairToken(
-      { email: user.email, userId: user._id, role: user.role },
-      privateKey
-    );
-    const updateKeyUser = await keyStoreRepo.update(
-      user._id.toString(),
-      {
-        refreshToken: pairJwtToken.refreshToken,
-        publicKey
-      },
-      refreshToken
-    );
-    if (!updateKeyUser) {
-      throw new BAD_REQUEST();
-    }
+    if (!clientId || !refreshToken) throw new UNAUTHORIZED();
+    const getKeyRedis = await redisService.get(`rfToken:${clientId}`);
+    if (getKeyRedis) {
+      const parseKey = JSON.parse(getKeyRedis);
+      if (parseKey.refreshToken !== refreshToken) throw new UNAUTHORIZED();
+      const { privateKey, publicKey } = generateKeyPairSync();
+      const payload = jwtDecode(refreshToken);
+      delete payload.exp;
+      delete payload.iat;
+      if (!Object.keys(payload).length) throw new UNAUTHORIZED();
+      const pairToken = JwtProvider.generatePairToken(payload, privateKey);
 
-    return {
-      ...pairJwtToken
-    };
+      if (!pairToken) throw new UNAUTHORIZED();
+      await Promise.all([
+        keyStoreRepo.update(
+          clientId,
+          {
+            userId: createObjectId(clientId),
+            publicKey,
+            refreshToken: pairToken.refreshToken
+          },
+          refreshToken
+        ),
+        redisService.set(
+          `rfToken:${clientId}`,
+          JSON.stringify({
+            refreshToken: pairToken.refreshToken,
+            publicKey
+          })
+        )
+      ]);
+      return {
+        refreshToken: pairToken.refreshToken,
+        accessToken: pairToken.accessToken
+      };
+    } else {
+      const getKey = await keyStoreRepo.findOneByUserId(clientId);
+      if (!getKey) throw new UNAUTHORIZED();
+      if (getKey.refreshToken !== refreshToken) throw new UNAUTHORIZED();
+      const payload = jwtDecode(refreshToken);
+      if (!Object.keys(payload).length) throw new UNAUTHORIZED();
+      const { privateKey, publicKey } = generateKeyPairSync();
+      const pairToken = JwtProvider.generatePairToken(payload, privateKey);
+      if (!pairToken) throw new UNAUTHORIZED();
+      await keyStoreRepo.update(
+        clientId,
+        {
+          userId: createObjectId(clientId),
+          publicKey,
+          refreshToken: pairToken.refreshToken
+        },
+        refreshToken
+      );
+      await redisService.set(
+        `rfToken:${clientId}`,
+        JSON.stringify({
+          refreshToken: pairToken.refreshToken,
+          publicKey
+        })
+      );
+
+      return {
+        refreshToken: pairToken.refreshToken,
+        accessToken: pairToken.accessToken
+      };
+    }
   };
   static logout = async (user: User) => {
     const deleteKeyUser = await keyStoreRepo.deleteByUserId(user.userId);

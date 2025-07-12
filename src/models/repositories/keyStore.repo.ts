@@ -3,7 +3,7 @@ import { ObjectId } from 'mongodb';
 import { keyStoreModel } from '../keyStore.model';
 import { createObjectId } from '~/utils/format';
 const { KEY_STORE_COLECTION_NAME } = keyStoreModel;
-interface KeyStore {
+export interface KeyStore {
   userId: string | ObjectId;
   publicKey: string;
   refreshToken: string;
@@ -19,7 +19,18 @@ const findOneByUserId = async (userId: string) => {
 };
 
 const createNew = async (data: KeyStore) => {
-  return await mongodb.getDB().collection<KeyStore>(KEY_STORE_COLECTION_NAME).insertOne(data);
+  return await mongodb.getDB().collection<KeyStore>(KEY_STORE_COLECTION_NAME).findOneAndUpdate(
+    {
+      userId: data.userId
+    },
+    {
+      $set: data
+    },
+    {
+      upsert: true,
+      returnDocument: 'after'
+    }
+  );
 };
 const update = async (userId: string, data: Partial<KeyStore>, refreshTokenUse: string) => {
   return await mongodb

@@ -8,18 +8,16 @@ const generatePairToken = (payload: object, privateKey: string) => {
     });
     const refreshToken = jwt.sign(payload, privateKey, {
       algorithm: 'RS256',
-      expiresIn: '2 days'
+      expiresIn: '7 days'
     });
     return {
       accessToken,
       refreshToken
     };
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
-    return {
-      accessToken: '',
-      refreshToken: ''
-    };
+    if (error instanceof Error) {
+      throw new Error(error.message);
+    }
   }
 };
 

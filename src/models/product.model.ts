@@ -1,3 +1,5 @@
+import { Double, ObjectId } from 'mongodb';
+import mongodb from '~/configs/database';
 import { STATUS } from '~/utils/constant';
 
 const PRODUCT_COLECTION_NAME = 'products';
@@ -14,8 +16,9 @@ const PRODUCT_COLLECTION_SCHEMA = {
       'sold',
       'status',
       'ratingAverage',
-      'ratingCound',
+      'ratingCount',
       'likeCount',
+      'specifications',
       'createdAt',
       'updatedAt',
       '_destroy'
@@ -54,6 +57,9 @@ const PRODUCT_COLLECTION_SCHEMA = {
           }
         }
       },
+      specifications: {
+        bsonType: 'object'
+      },
       status: {
         bsonType: 'string',
         enum: [...Object.values(STATUS)]
@@ -64,7 +70,8 @@ const PRODUCT_COLLECTION_SCHEMA = {
       ratingAverage: {
         bsonType: 'double'
       },
-      ratingCound: {
+
+      ratingCount: {
         bsonType: 'int'
       },
       likeCount: {
@@ -82,8 +89,27 @@ const PRODUCT_COLLECTION_SCHEMA = {
     }
   }
 };
+export interface Product {
+  shopId: ObjectId;
+  slug: string;
+  title: string;
+  description: string;
+  thumbnails: { position: string; url: string }[];
+  video: string;
+  sold: number;
+  status: string;
+  ratingAverage: Double;
+  specifications: object;
+  ratingCount: number;
+  likeCount: number;
+  createdAt: Date;
+  updatedAt: Date | null;
+  _destroy: boolean;
+}
+const getCollectionProduct = () => mongodb.getDB().collection<Product>(PRODUCT_COLECTION_NAME);
 
 export const productModel = {
   PRODUCT_COLECTION_NAME,
-  PRODUCT_COLLECTION_SCHEMA
+  PRODUCT_COLLECTION_SCHEMA,
+  getCollectionProduct
 };

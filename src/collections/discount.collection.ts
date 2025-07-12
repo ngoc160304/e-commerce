@@ -3,6 +3,7 @@ import { discountModel } from '~/models/discount.model';
 const createCollectionDiscount = async () => {
   try {
     await mongodb.getDB().createCollection(discountModel.DISCOUNT_COLECTION_NAME);
+
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (err) {
     //

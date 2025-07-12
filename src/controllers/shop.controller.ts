@@ -5,7 +5,7 @@ class shopController {
   createNew = async (req: Request, res: Response, next: NextFunction) => {
     try {
       new CREATED({
-        message: await ShopService.createNew(req.body, req.user)
+        metadata: await ShopService.createNew(req.body, req.user)
       }).send(res);
     } catch (error) {
       next(error);
@@ -14,7 +14,7 @@ class shopController {
   verifyShop = async (req: Request, res: Response, next: NextFunction) => {
     try {
       new CREATED({
-        metadata: await ShopService.verifyShop(req.body, req.user.userId)
+        metadata: await ShopService.verifyShop(req.body, req.user)
       }).send(res);
     } catch (error) {
       next(error);
