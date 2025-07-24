@@ -7,15 +7,67 @@ const findOneById = async (id: string, filter: Partial<UserDiscount> = {}) => {
     ...filter
   });
 };
-const createNew = async (data: UserDiscount) => {
-  return getCollectionUserDiscount().insertOne(data);
+const checkDiscountUserExist = async (discountId: string, userId: string) => {
+  return getCollectionUserDiscount().findOne({
+    discountId: createObjectId(discountId),
+    userId: createObjectId(userId)
+  });
 };
-const getDiscountByUser = async (id: string, shopId: string, userId: string) => {
+
+const createNew = async (data: UserDiscount) => {
+  return getCollectionUserDiscount().findOneAndUpdate(
+    {
+      discountId: data.discountId
+    },
+    {
+      $set: data
+    },
+    {
+      upsert: true,
+      returnDocument: 'after'
+    }
+  );
+};
+
+const getDiscountByUser = async (discountId: string, userId: string) => {
   return await getCollectionUserDiscount()
     .aggregate([
       {
         $match: {
-          _id: createObjectId(id),
+          discountId: createObjectId(discountId),
+          userId: createObjectId(userId)
+        }
+      },
+      {
+        $lookup: {
+          from: discountModel.DISCOUNT_COLECTION_NAME,
+          localField: 'discountId',
+          foreignField: '_id',
+          as: 'discount'
+        }
+      },
+      {
+        $unwind: '$discount'
+      }
+    ])
+    .toArray();
+};
+const getListDiscountUser = async (
+  codeDiscount: string,
+  limitPage: number,
+  pageCurrent: number,
+  userId: string
+) => {
+  let query = {};
+  if (codeDiscount) {
+    query = {
+      code: codeDiscount
+    };
+  }
+  return await getCollectionUserDiscount()
+    .aggregate([
+      {
+        $match: {
           userId: createObjectId(userId)
         }
       },
@@ -28,21 +80,43 @@ const getDiscountByUser = async (id: string, shopId: string, userId: string) => 
             {
               $match: {
                 _destroy: false,
-                shopId: createObjectId(shopId)
+                endDate: {
+                  $gt: new Date()
+                },
+                ...query
               }
             }
           ],
-          as: 'discount'
+          as: 'discounts'
         }
       },
       {
-        $unwind: '$discount'
+        $sort: {
+          createdAt: -1
+        }
+      },
+      {
+        $skip: pageCurrent
+      },
+      {
+        $limit: limitPage
       }
     ])
     .toArray();
 };
+const reduceDiscount = async (userDiscountId: string) => {
+  return await getCollectionUserDiscount().updateOne(
+    {
+      _id: createObjectId(userDiscountId)
+    },
+    { $inc: { used: -1 } }
+  );
+};
 export const userDiscountRepo = {
   findOneById,
   createNew,
-  getDiscountByUser
+  getListDiscountUser,
+  checkDiscountUserExist,
+  getDiscountByUser,
+  reduceDiscount
 };

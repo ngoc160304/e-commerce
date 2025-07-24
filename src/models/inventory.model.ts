@@ -10,6 +10,7 @@ const INVENTORY_COLLECTION_SCHEMA = {
       'productId',
       'stock',
       'price',
+      'thumbnail',
       'createdAt',
       'updatedAt',
       'variants',
@@ -29,6 +30,9 @@ const INVENTORY_COLLECTION_SCHEMA = {
       stock: {
         bsonType: ['int', 'null'],
         minimum: 0
+      },
+      thumbnail: {
+        bsonType: ['string']
       },
       variants: {
         bsonType: ['array', 'null'],
@@ -62,6 +66,7 @@ const INVENTORY_COLLECTION_SCHEMA = {
 export interface Inventory {
   shopId: ObjectId;
   productId: ObjectId;
+  thumbnail: string;
   variants: { attribute: string; value: string }[] | null;
   stock: number;
   price: number;

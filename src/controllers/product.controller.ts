@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { BAD_REQUEST } from '~/core/errors.response';
 import { OK } from '~/core/successes,response';
 import ProductService from '~/services/product.service';
 class ProductController {
@@ -36,9 +37,12 @@ class ProductController {
   };
   deleteProductByShop = async (req: Request, res: Response, next: NextFunction) => {
     try {
+      if (!req.params.productId) {
+        throw new BAD_REQUEST('Invalid request !');
+      }
       new OK({
         metadata: await ProductService.deleteProductByShop(req.params.productId, req.shop.shopId)
-      });
+      }).send(res);
     } catch (error) {
       next(error);
     }
@@ -48,7 +52,7 @@ class ProductController {
     try {
       new OK({
         metadata: await ProductService.getListProductUser(req.query)
-      });
+      }).send(res);
     } catch (error) {
       next(error);
     }

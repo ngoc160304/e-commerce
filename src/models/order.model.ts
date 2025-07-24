@@ -1,3 +1,5 @@
+import { ObjectId } from 'mongodb';
+import mongodb from '~/configs/database';
 import { STATUS_ORDER } from '~/utils/constant';
 
 const ORDER_COLECTION_NAME = 'orders';
@@ -20,33 +22,16 @@ const ORDER_COLLECTION_SCHEMA = {
       },
       productInfo: {
         bsonType: 'object',
-        required: ['productId', 'shopId', 'variants', 'quantity', 'price', 'discountCode'],
+        required: ['shopId', 'inventoryId', 'quantity', 'price', 'totalAmount', 'discountId'],
         properties: {
-          productId: {
-            bsonType: 'objectId'
-          },
           shopId: { bsonType: 'objectId' },
-          variants: {
-            bsonType: ['array', 'null'],
-            uniqueItems: true,
-            additionalProperties: false,
-            items: {
-              bsonType: 'object',
-              required: ['attribute', 'value'],
-              properties: {
-                attribute: {
-                  bsonType: 'string'
-                },
-                value: {
-                  bsonType: 'string'
-                }
-              }
-            }
-          },
-          quantity: { bsonType: 'int' },
+          inventoryId: { bsonType: 'objectId' },
           price: { bsonType: 'int' },
-          discountCode: {
-            bsonType: ['string', 'null']
+          discountId: {
+            bsonType: ['objectId', 'null']
+          },
+          totalAmount: {
+            bsonType: 'int'
           }
         }
       },
@@ -72,7 +57,27 @@ const ORDER_COLLECTION_SCHEMA = {
     }
   }
 };
+export interface Order {
+  userId: ObjectId;
+  productInfo: {
+    productId: ObjectId;
+    shopId: ObjectId;
+    inventoryId: ObjectId;
+    quantity: number;
+    price: number;
+    totalAmount: number;
+    discountId: ObjectId | null;
+  };
+  shippingAddress: string;
+  messageForShop: string;
+  status: string;
+  createdAt: Date;
+  updatedAt: Date | null;
+  _destroy: boolean;
+}
+const getCollectionOrder = () => mongodb.getDB().collection<Order>(ORDER_COLECTION_NAME);
 
+export { getCollectionOrder };
 export const orderModel = {
   ORDER_COLECTION_NAME,
   ORDER_COLLECTION_SCHEMA

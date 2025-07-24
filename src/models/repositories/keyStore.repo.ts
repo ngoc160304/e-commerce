@@ -40,8 +40,7 @@ const update = async (userId: string, data: Partial<KeyStore>, refreshTokenUse: 
       {
         userId: createObjectId(userId)
       },
-      { $push: { refreshTokenUses: refreshTokenUse }, $set: data },
-      { upsert: true }
+      { $push: { refreshTokenUses: refreshTokenUse }, $set: data }
     );
 };
 const deleteByUserId = async (userId: string) => {

@@ -34,7 +34,7 @@ class AccessController {
     try {
       new OK({
         metadata: await AccessService.refreshToken({
-          refreshToken: req.headers[HEADERS.REFRESH_TOKEN]?.toString() || '',
+          refreshTokenClient: req.headers[HEADERS.REFRESH_TOKEN]?.toString() || '',
           clientId: req.headers[HEADERS.CLIENT_ID]?.toString() || ''
         })
       }).send(res);

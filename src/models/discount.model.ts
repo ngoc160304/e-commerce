@@ -1,4 +1,4 @@
-import { Double, ObjectId } from 'mongodb';
+import { ObjectId } from 'mongodb';
 import mongodb from '~/configs/database';
 import { DISCOUNT_APPLY, DISCOUNT_TYPES } from '~/utils/constant';
 

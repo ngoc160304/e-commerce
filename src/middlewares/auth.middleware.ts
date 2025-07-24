@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { FORBIDDEN, REFRESH_TOKEN, UNAUTHORIZED } from '~/core/errors.response';
 import { keyStoreRepo } from '~/models/repositories/keyStore.repo';
 import { JwtProvider } from '~/providers/jwt.provider';
-import { redisService } from '~/services/redis.service';
+import { userRedis } from '~/redis/user.redis';
 import { HEADERS } from '~/utils/constant';
 
 /**
@@ -16,10 +16,9 @@ const authentication = async (req: Request, res: Response, next: NextFunction) =
     if (!clientId || !accessToken) {
       throw new UNAUTHORIZED();
     }
-    const getKeyRedis = await redisService.get(`rfToken:${clientId}`);
+    const getKeyRedis = await userRedis.getKeyStore(`rfToken:${clientId}`);
     if (getKeyRedis) {
-      const parseKey = JSON.parse(getKeyRedis);
-      const decodedToken = JwtProvider.verifyToken(accessToken, parseKey.publicKey) as User;
+      const decodedToken = JwtProvider.verifyToken(accessToken, getKeyRedis.publicKey) as User;
       req.user = decodedToken;
     } else {
       const getKeyUser = await keyStoreRepo.findOneByUserId(clientId);
@@ -36,7 +35,7 @@ const authentication = async (req: Request, res: Response, next: NextFunction) =
         return next(new REFRESH_TOKEN());
       }
     }
-    next(error);
+    next(new UNAUTHORIZED());
   }
 };
 const authorization = (role: string[]) => {

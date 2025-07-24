@@ -26,7 +26,7 @@ export const customSlug = (slug: string = '') => {
 };
 export const pagination = (query: ParsedQs) => {
   const limitPage = parseInt(query.limit as string, 10) || LIMIT_ITEMS;
-  const pageCurrent = parseInt(query.page as string, 10) || PAGE_DEFAULT;
+  const pageCurrent = (parseInt(query.page as string, 10) || PAGE_DEFAULT - 1) * limitPage;
   return {
     limitPage,
     pageCurrent

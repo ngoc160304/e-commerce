@@ -22,11 +22,13 @@ class ProductService {
             variants: null;
             stock: number;
             price: number;
+            thumbnail: string;
           }
         | {
             variants: { attribute: string; value: string }[];
             stock: number;
             price: number;
+            thumbnail: string;
           }[];
     },
     shopId: string
@@ -94,6 +96,7 @@ class ProductService {
             createdAt: Date;
             updatedAt: Date | null;
             _destroy: boolean;
+            thumbnail: string;
           }
         | {
             variants: { attribute: string; value: string }[];
@@ -102,6 +105,7 @@ class ProductService {
             createdAt: Date;
             updatedAt: Date | null;
             _destroy: boolean;
+            thumbnail: string;
           }[];
     },
     productId: string,
@@ -123,7 +127,7 @@ class ProductService {
       productId,
       shopId
     );
-    await inventoryRepo.deleteByProductId(productId);
+    await inventoryRepo.deleteMultiByProductId(productId);
     let newInventory: Inventory | Inventory[];
     if (isArray(data.inventorys)) {
       newInventory = data.inventorys.map((item) => {
@@ -182,7 +186,7 @@ class ProductService {
   };
   static deleteProductByShop = async (productId: string, shopId: string) => {
     await productRepo.deleteByShop(productId, shopId);
-    await inventoryRepo.deleteByProductId(productId);
+    await inventoryRepo.deleteMultiByProductId(productId);
     return 'Delete product successfylly !';
   };
 }

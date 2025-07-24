@@ -1,176 +1,167 @@
-import { ObjectId } from 'mongodb';
-import mongodb from '~/configs/database';
 import { createObjectId } from '~/utils/format';
-import { cartModel } from '../cart.model';
+import { Cart, getCollectionCart } from '../cart.model';
+import { ObjectId } from 'mongodb';
 import { productModel } from '../product.model';
-import { STATUS } from '~/utils/constant';
 import { inventoryModel } from '../inventory.model';
-const { CART_COLECTION_NAME } = cartModel;
-export interface Cart {
-  userId: ObjectId;
-  products: {
-    productId: ObjectId;
-    quantity: number;
-    variants: { attribute: string; value: string }[] | null;
-  }[];
-  createdAt: Date;
-  updatedAt: Date | null;
-}
-const getCartUser = async (userId: string) => {
-  return await mongodb
-    .getDB()
-    .collection<Cart>(CART_COLECTION_NAME)
+const findOneByUserId = async (userId: string) => {
+  return await getCollectionCart().findOne({
+    userId: createObjectId(userId)
+  });
+};
+const getCartDetailByUserId = async (userId: string) => {
+  return await getCollectionCart()
     .aggregate([
       {
         $match: {
           userId: createObjectId(userId)
         }
       },
-
       {
         $lookup: {
           from: productModel.PRODUCT_COLECTION_NAME,
           localField: 'products.productId',
           foreignField: '_id',
-          pipeline: [
-            {
-              $lookup: {
-                from: inventoryModel.INVENTORY_COLECTION_NAME,
-                localField: '_id',
-                foreignField: 'productId',
-                as: 'inventorys'
-              }
-            },
-            {
-              $match: {
-                $and: [{ status: STATUS.ACTIVE }, { _destroy: false }]
-              }
-            }
-          ],
-          as: 'productsDetail'
+          as: 'productInfo'
         }
       },
-      { $unwind: '$products' },
-      { $unwind: '$productsDetail' },
+      {
+        $lookup: {
+          from: inventoryModel.INVENTORY_COLECTION_NAME,
+          localField: 'products.inventoryId',
+          foreignField: '_id',
+          as: 'inventoryInfo'
+        }
+      },
+      {
+        $unwind: '$productInfo'
+      },
+      {
+        $unwind: '$inventoryInfo'
+      },
+
       {
         $project: {
-          _id: 1,
-          userId: 1,
-          createdAt: 1,
-          updatedAt: 1,
-          products: {
+          productInfo: {
             $cond: {
               if: {
-                $eq: ['$products.productId', '$productsDetail._id']
+                $eq: ['$productInfo._id', '$inventoryInfo.productId']
               },
               then: {
-                $mergeObjects: [
-                  '$products',
-                  {
-                    title: '$productsDetail.title',
-                    thumbnails: '$productsDetail.thumbnails',
-                    inventory: '$productsDetail.inventorys',
-                    slug: '$productsDetail.slug',
-                    stock: '$productsDetail.stock',
-                    price: '$productsDetail.price',
-                    details: '$productsDetail'
-                  }
-                ]
+                _id: '$productInfo._id',
+                title: '$productInfo.title',
+                thumbnail: '$productInfo.thumbnails',
+                slug: '$productInfo.slug',
+                stock: '$inventoryInfo.stock',
+                price: '$inventoryInfo.price',
+                inventoryId: '$inventoryInfo._id'
               },
               else: null
             }
+          },
+          inventoryInfo: 1,
+          products: 1
+        }
+      },
+      {
+        $unwind: '$products'
+      },
+      {
+        $match: {
+          productInfo: {
+            $ne: null
           }
         }
       },
-      { $match: { products: { $ne: null } } },
-      { $unwind: '$products.inventory' },
       {
         $project: {
-          _id: 1,
-          userId: 1,
-          createdAt: 1,
-          updatedAt: 1,
-          products: {
+          productInfo: {
             $cond: {
               if: {
-                $eq: ['$products.variants', '$products.inventory.variants']
+                $eq: ['$productInfo._id', '$products.productId']
               },
               then: {
-                $mergeObjects: [
-                  '$products',
-                  {
-                    price: '$products.inventory.price',
-                    inventory: '$products.details.inventorys',
-                    stock: '$products.inventory.stock'
-                  }
-                ]
+                _id: '$productInfo._id',
+                title: '$productInfo.title',
+                thumbnail: '$inventoryInfo.thumbnail',
+                slug: '$productInfo.slug',
+                stock: '$inventoryInfo.stock',
+                price: '$inventoryInfo.price',
+                inventoryId: '$inventoryInfo._id'
               },
               else: null
             }
-          }
+          },
+          quantity: '$products.quantity'
         }
       },
       {
         $match: {
-          products: { $ne: null }
-        }
-      },
-      {
-        $project: {
-          _id: 1,
-          userId: 1,
-          products: {
-            quantity: 1,
-            productId: 1,
-            variants: 1,
-            title: 1,
-            thumbnails: 1,
-            inventory: 1,
-            slug: 1,
-            stock: 1,
-            price: 1
+          productInfo: {
+            $ne: null
           }
         }
       }
     ])
     .toArray();
 };
-
-const findOneByUserId = async (userId: string) => {
-  try {
-    return await mongodb
-      .getDB()
-      .collection<Cart>(CART_COLECTION_NAME)
-      .findOne({
-        userId: createObjectId(userId)
-      });
-  } catch (error) {
-    if (error instanceof Error) throw new Error(error.message);
-  }
-};
 const createNew = async (data: Cart) => {
-  return await mongodb.getDB().collection<Cart>(CART_COLECTION_NAME).insertOne(data);
+  return await getCollectionCart().insertOne(data);
 };
-const update = async (update: object, userId: string) => {
-  return await mongodb
-    .getDB()
-    .collection<Cart>(CART_COLECTION_NAME)
-    .findOneAndUpdate(
-      {
-        userId: createObjectId(userId)
+const addProduct = async (
+  data: { inventoryId: ObjectId; quantity: number; productId: ObjectId },
+  userId: string
+) => {
+  return await getCollectionCart().updateOne(
+    {
+      userId: createObjectId(userId)
+    },
+    {
+      $push: {
+        products: data
       },
-      {
-        ...update
-      },
-      {
-        returnDocument: 'after'
+      $set: {
+        updatedAt: new Date()
       }
-    );
+    }
+  );
 };
-
+const updateQtyProduct = async (
+  data: { inventoryId: ObjectId; quantity: number },
+  userId: string
+) => {
+  const { inventoryId, quantity } = data;
+  return await getCollectionCart().updateOne(
+    {
+      userId: createObjectId(userId),
+      'products.inventoryId': inventoryId
+    },
+    {
+      $set: {
+        'products.$.quantity': quantity,
+        updatedAt: new Date()
+      }
+    }
+  );
+};
+const deleteProduct = async (productId: string, userId: string) => {
+  return await getCollectionCart().updateOne(
+    {
+      userId: createObjectId(userId)
+    },
+    {
+      $pull: {
+        products: {
+          productId: createObjectId(productId)
+        }
+      }
+    }
+  );
+};
 export const cartRepo = {
   createNew,
   findOneByUserId,
-  update,
-  getCartUser
+  addProduct,
+  updateQtyProduct,
+  deleteProduct,
+  getCartDetailByUserId
 };

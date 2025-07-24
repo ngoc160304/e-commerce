@@ -67,10 +67,17 @@ const getListProductUser = async (
     .toArray();
 };
 const deleteByShop = async (productId: string, shopId: string) => {
-  return await productModel.getCollectionProduct().deleteOne({
-    _id: createObjectId(productId),
-    shopId: createObjectId(shopId)
-  });
+  return await productModel.getCollectionProduct().updateOne(
+    {
+      _id: createObjectId(productId),
+      shopId: createObjectId(shopId)
+    },
+    {
+      $set: {
+        _destroy: true
+      }
+    }
+  );
 };
 export const productRepo = {
   findOneById,

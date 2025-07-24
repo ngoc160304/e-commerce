@@ -1,3 +1,6 @@
+import { ObjectId } from 'mongodb';
+import mongodb from '~/configs/database';
+
 const CART_COLECTION_NAME = 'carts';
 const CART_COLLECTION_SCHEMA = {
   $jsonSchema: {
@@ -11,27 +14,11 @@ const CART_COLLECTION_SCHEMA = {
         bsonType: ['array'],
         items: {
           bsonType: 'object',
-          required: ['productId', 'quantity', 'variants'],
+          required: ['productId', 'inventoryId', 'quantity'],
           properties: {
+            inventoryId: { bsonType: 'objectId' },
             productId: { bsonType: 'objectId' },
-            quantity: { bsonType: 'int' },
-            variants: {
-              bsonType: ['array', 'null'],
-              uniqueItems: true,
-              additionalProperties: false,
-              items: {
-                bsonType: 'object',
-                required: ['attribute', 'value'],
-                properties: {
-                  attribute: {
-                    bsonType: 'string'
-                  },
-                  value: {
-                    bsonType: 'string'
-                  }
-                }
-              }
-            }
+            quantity: { bsonType: 'int' }
           }
         }
       },
@@ -44,8 +31,17 @@ const CART_COLLECTION_SCHEMA = {
     }
   }
 };
-
+export interface Cart {
+  userId: ObjectId;
+  products: { productId: ObjectId; inventoryId: ObjectId; quantity: number }[];
+  createdAt: Date;
+  updatedAt: Date | null;
+}
+const getCollectionCart = () => {
+  return mongodb.getDB().collection<Cart>(CART_COLECTION_NAME);
+};
 export const cartModel = {
   CART_COLECTION_NAME,
   CART_COLLECTION_SCHEMA
 };
+export { getCollectionCart };

@@ -1,15 +1,16 @@
 import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
 import { BAD_REQUEST, CONFLICT, FORBIDDEN, UNAUTHORIZED } from '~/core/errors.response';
-import { keyStoreRepo } from '~/models/repositories/keyStore.repo';
+import { KeyStore, keyStoreRepo } from '~/models/repositories/keyStore.repo';
 import { userRepo } from '~/models/repositories/user.repo';
 import { BrevoProvider } from '~/providers/brevo.provider';
 import { JwtProvider } from '~/providers/jwt.provider';
 import { ROLE_NAME, STATUS } from '~/utils/constant';
 import { createObjectId, pickUser } from '~/utils/format';
 import { generateKeyPairSync } from '~/utils/generate';
-import { redisService } from './redis.service';
+import { userRedis } from '~/redis/user.redis';
 import { jwtDecode } from 'jwt-decode';
+import ms from 'ms';
 class AccessService {
   static register = async (data: {
     email: string;
@@ -63,30 +64,26 @@ class AccessService {
       role: getUser.role
     };
     const pairToken = JwtProvider.generatePairToken(payload, privateKey);
-    if (!pairToken) throw new BAD_REQUEST("Cann't log in !");
+    if (!pairToken) throw new UNAUTHORIZED('Login failed !');
     const { accessToken, refreshToken } = pairToken;
-    // luu key user vao redis
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const [_, keyStore] = await Promise.all([
-      redisService.set(
-        `rfToken:${payload.userId}`,
-        JSON.stringify({
-          refreshToken,
-          publicKey
-        })
-      ),
-      keyStoreRepo.createNew({
-        publicKey,
-        refreshToken: accessToken,
-        userId: getUser._id,
-        refreshTokenUses: []
-      })
-    ]);
-    if (!keyStore) throw new BAD_REQUEST("Cann't log in !");
+    await keyStoreRepo.createNew({
+      publicKey,
+      refreshToken,
+      userId: createObjectId(getUser._id.toString()),
+      refreshTokenUses: []
+    });
+    await userRedis.setRfToken(
+      getUser._id.toString(),
+      {
+        refreshToken,
+        publicKey
+      },
+      ms('7 days') / 1000
+    );
     return {
       accessToken,
       refreshToken,
-      userInfo: pickUser(getUser, ['_id', 'username', 'email', 'displayName', 'avatar', 'role'])
+      user: pickUser(getUser)
     };
   };
   static verifyAccount = async (data: { verifyToken: string }) => {
@@ -101,78 +98,63 @@ class AccessService {
   };
   // Cập nhật lại nếu refreshtoken lỗi thì throw lỗi để bên clien tự động đăng xuất
   static refreshToken = async ({
-    refreshToken,
+    refreshTokenClient,
     clientId
   }: {
-    refreshToken: string;
+    refreshTokenClient: string;
     clientId: string;
   }) => {
-    if (!clientId || !refreshToken) throw new UNAUTHORIZED();
-    const getKeyRedis = await redisService.get(`rfToken:${clientId}`);
+    if (!clientId || !refreshTokenClient) throw new UNAUTHORIZED();
+    let getKeyRedis = await userRedis.getKeyStore(clientId);
+    let payload;
     if (getKeyRedis) {
-      const parseKey = JSON.parse(getKeyRedis);
-      if (parseKey.refreshToken !== refreshToken) throw new UNAUTHORIZED();
-      const { privateKey, publicKey } = generateKeyPairSync();
-      const payload = jwtDecode(refreshToken);
-      delete payload.exp;
-      delete payload.iat;
-      if (!Object.keys(payload).length) throw new UNAUTHORIZED();
-      const pairToken = JwtProvider.generatePairToken(payload, privateKey);
-
-      if (!pairToken) throw new UNAUTHORIZED();
-      await Promise.all([
-        keyStoreRepo.update(
-          clientId,
-          {
-            userId: createObjectId(clientId),
-            publicKey,
-            refreshToken: pairToken.refreshToken
-          },
-          refreshToken
-        ),
-        redisService.set(
-          `rfToken:${clientId}`,
-          JSON.stringify({
-            refreshToken: pairToken.refreshToken,
-            publicKey
-          })
-        )
-      ]);
-      return {
-        refreshToken: pairToken.refreshToken,
-        accessToken: pairToken.accessToken
-      };
+      console.log('case 1');
+      const { refreshToken } = getKeyRedis;
+      if (refreshToken !== refreshTokenClient) {
+        await userRedis.delKeyStore(clientId);
+        await keyStoreRepo.deleteByUserId(clientId);
+        throw new UNAUTHORIZED('Refresh token is not valid !');
+      }
+      payload = jwtDecode(refreshTokenClient);
     } else {
-      const getKey = await keyStoreRepo.findOneByUserId(clientId);
-      if (!getKey) throw new UNAUTHORIZED();
-      if (getKey.refreshToken !== refreshToken) throw new UNAUTHORIZED();
-      const payload = jwtDecode(refreshToken);
-      if (!Object.keys(payload).length) throw new UNAUTHORIZED();
-      const { privateKey, publicKey } = generateKeyPairSync();
-      const pairToken = JwtProvider.generatePairToken(payload, privateKey);
-      if (!pairToken) throw new UNAUTHORIZED();
-      await keyStoreRepo.update(
-        clientId,
-        {
-          userId: createObjectId(clientId),
-          publicKey,
-          refreshToken: pairToken.refreshToken
-        },
-        refreshToken
-      );
-      await redisService.set(
-        `rfToken:${clientId}`,
-        JSON.stringify({
-          refreshToken: pairToken.refreshToken,
-          publicKey
-        })
-      );
-
-      return {
-        refreshToken: pairToken.refreshToken,
-        accessToken: pairToken.accessToken
-      };
+      console.log('case 2');
+      getKeyRedis = (await keyStoreRepo.findOneByUserId(clientId)) as KeyStore;
+      if (!getKeyRedis) {
+        throw new UNAUTHORIZED();
+      }
+      if (getKeyRedis.refreshToken !== refreshTokenClient) {
+        await keyStoreRepo.deleteByUserId(clientId);
+        throw new UNAUTHORIZED('Refresh token is not valid !');
+      }
+      payload = jwtDecode(refreshTokenClient);
     }
+    delete payload.iat;
+    delete payload.exp;
+    const { privateKey, publicKey } = generateKeyPairSync();
+    const pairToken = JwtProvider.generatePairToken(payload, privateKey);
+    if (!pairToken) {
+      throw new BAD_REQUEST();
+    }
+    await keyStoreRepo.update(
+      clientId,
+      {
+        publicKey,
+        refreshToken: pairToken.refreshToken
+      },
+      refreshTokenClient
+    );
+    await userRedis.setRfToken(
+      clientId,
+      {
+        publicKey,
+        refreshToken: pairToken.refreshToken
+      },
+      ms('7 days') / 1000
+    );
+    return {
+      accessToken: pairToken.accessToken,
+      refreshToken: pairToken.refreshToken
+    };
   };
   static logout = async (user: User) => {
     const deleteKeyUser = await keyStoreRepo.deleteByUserId(user.userId);

@@ -4,10 +4,13 @@ import { authMiddleware } from '~/middlewares/auth.middleware';
 import { shopMiddleware } from '~/middlewares/shop.middleware';
 const router = Router();
 
+router.get('/list-discount-product/:productId', discountController.getListDiscountProduct);
+
 router.use(authMiddleware.authentication);
 // user
+router.get('/list-discount-user', discountController.getListDiscountUser);
 router.post('/discount-amount', discountController.discountAmount);
-router.post('/save-discount-user', discountController.saveDiscountUser);
+router.post('/save-discount-user/:discountId', discountController.saveDiscountUser);
 
 // shop
 router.use(shopMiddleware.shopAuthentication);
